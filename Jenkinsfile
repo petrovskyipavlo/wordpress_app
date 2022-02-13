@@ -24,6 +24,16 @@ pipeline {
                 git credentialsId: 'github-key', url: 'https://github.com/petrovskyipavlo/final_task_iac.git', branch: 'main' 
             }
 	    } 
+
+		stage('Load Environment Variables') {     
+            steps {
+          
+                script {
+                    load "/var/lib/jenkins/.envvars/.env.groovy"
+                    echo "${env.VAULT_LOCATION}"               
+                }
+            }
+        }
 		
 		
 
@@ -125,15 +135,35 @@ pipeline {
             }
 		}
 
+		stage ('Decrypt the Secrets File') {
+            steps{
+                sh """
+                    set +x 
+                    cd ${WORKSPACE}/terraform
+                    ansible-vault decrypt --vault-password-file=${env.VAULT_LOCATION}/${envvar}.txt ${env.VAULT_LOCATION}/${envvar}-secrets.tfvars       
+                """
+            } 
+        }
+
 		stage ("Run Wordpress") {
             steps{
                 sshagent(credentials : ['ssh-aws']) {                    
 					
 					sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} uptime"
                     sh "ssh -v ubuntu@${SERVER_IP}"					
-					sh "ssh  ubuntu@${SERVER_IP}  docker run -d -p 8080:5000 ${registry}:${BUILD_NUMBER}"
+					sh "ssh  ubuntu@${SERVER_IP}  docker run -d -p 80:5000 ${registry}:${BUILD_NUMBER}"
 					
                 }
+            }
+        }
+
+		stage ('Re-Encrypt the Secrets File') {
+            steps{
+                sh """
+                    set +x
+                    cd ${WORKSPACE}/terraform   
+                    ansible-vault encrypt --vault-password-file=${env.VAULT_LOCATION}/${envvar}.txt ${env.VAULT_LOCATION}/${envvar}-secrets.tfvars      
+                """
             }
         }
     
