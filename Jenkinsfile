@@ -139,8 +139,8 @@ pipeline {
             steps{
                 sh """
                     set +x 
-                    cd ${WORKSPACE}/terraform
-                    ansible-vault decrypt --vault-password-file=${env.VAULT_LOCATION}/${envvar}.txt ${env.VAULT_LOCATION}/${envvar}-secrets.tfvars       
+                    
+                    ansible-vault decrypt --vault-password-file=${env.VAULT_LOCATION}/${envvar}.txt ${env.VAULT_LOCATION}/wpvar      
                 """
             } 
         }
@@ -151,7 +151,7 @@ pipeline {
 					
 					sh "ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} uptime"
                     sh "ssh -v ubuntu@${SERVER_IP}"					
-					sh "ssh  ubuntu@${SERVER_IP}  docker run -d -p 80:5000 ${registry}:${BUILD_NUMBER}"
+					sh "ssh  ubuntu@${SERVER_IP}  docker run -d -p 80:5000 --env-file ${env.VAULT_LOCATION}/wpwar ${registry}:${BUILD_NUMBER}"
 					
                 }
             }
@@ -161,8 +161,8 @@ pipeline {
             steps{
                 sh """
                     set +x
-                    cd ${WORKSPACE}/terraform   
-                    ansible-vault encrypt --vault-password-file=${env.VAULT_LOCATION}/${envvar}.txt ${env.VAULT_LOCATION}/${envvar}-secrets.tfvars      
+                      
+                    ansible-vault encrypt --vault-password-file=${env.VAULT_LOCATION}/${envvar}.txt ${env.VAULT_LOCATION}/wpvar      
                 """
             }
         }
